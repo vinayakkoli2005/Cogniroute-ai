@@ -1,3 +1,13 @@
+---
+title: CogniRoute AI
+emoji: 🧠
+colorFrom: indigo
+colorTo: purple
+sdk: docker
+pinned: false
+app_port: 7860
+---
+
 # CogniRoute AI — Cognitive Routing & RAG
 
 Production-quality implementation of the Grid07 AI cognitive loop — with a live REST API.
