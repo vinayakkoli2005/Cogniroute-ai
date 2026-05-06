@@ -1,6 +1,10 @@
-from config import OLLAMA_MODEL
-from ollama_client import chat
+import llm_provider
 from schemas import DefenseReply
+
+def chat(phase, messages):
+    return llm_provider.chat(phase, messages, api_key=_request_api_key)
+
+_request_api_key: str = ""
 
 # Injection attack signatures — extend this list as new patterns emerge
 _INJECTION_PATTERNS = [
@@ -41,6 +45,7 @@ def generate_defense_reply(
     parent_post: str,
     comment_history: list[dict],
     human_reply: str,
+    api_key: str = "",
 ) -> DefenseReply:
     """
     Generate a debate reply using full thread context (RAG-style prompt construction).
@@ -60,6 +65,8 @@ def generate_defense_reply(
     Returns:
         DefenseReply with reply text and injection_detected flag.
     """
+    global _request_api_key
+    _request_api_key = api_key
     injection_detected = detect_injection(human_reply)
 
     thread_lines = [f"[ORIGINAL POST]: {parent_post}"]

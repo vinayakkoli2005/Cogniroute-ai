@@ -32,32 +32,33 @@ def get_provider_info() -> dict:
     }
 
 
-def chat(phase: str, messages: list[dict], model: str = "", format: str = "") -> str:
+def chat(phase: str, messages: list[dict], model: str = "", format: str = "", api_key: str = "") -> str:
     """
     Unified chat function. Routes to Groq or Ollama based on ACTIVE_PROVIDER.
-    Signature matches ollama_client.chat() exactly.
 
     Args:
         phase:    Label for stats tracking (e.g. "phase1", "phase2").
         messages: List of role/content dicts.
         model:    Override model name (uses provider default if empty).
         format:   Output format hint ("json" or "").
+        api_key:  Per-request Groq API key (overrides env var when provided).
 
     Returns:
         Assistant response text string.
     """
-    if ACTIVE_PROVIDER == "groq":
-        return _chat_groq(phase, messages, model or GROQ_MODEL, format)
+    key = api_key or GROQ_API_KEY
+    if key:
+        return _chat_groq(phase, messages, model or GROQ_MODEL, format, key)
     return _chat_ollama(phase, messages, model or OLLAMA_MODEL, format)
 
 
-def _chat_groq(phase: str, messages: list[dict], model: str, format: str) -> str:
+def _chat_groq(phase: str, messages: list[dict], model: str, format: str, api_key: str) -> str:
     """Send request to Groq API using openai-compatible client."""
     from groq import Groq
     from stats_tracker import tracker
     import time
 
-    client = Groq(api_key=GROQ_API_KEY)
+    client = Groq(api_key=api_key)
 
     # If JSON format requested, append explicit instruction to system prompt
     if format == "json":

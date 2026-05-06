@@ -2,10 +2,16 @@ import json
 from typing import TypedDict
 from langgraph.graph import StateGraph, END
 from config import BOT_PERSONAS, OLLAMA_MODEL, CRITIQUE_PASS_SCORE, MAX_CRITIQUE_RETRIES
-from ollama_client import chat
+import llm_provider
 from memory_store import memory
 from schemas import BotPost, PostScore
 from langchain_core.tools import tool
+
+# per-request api_key injected by run_content_engine before graph execution
+_request_api_key: str = ""
+
+def chat(phase, messages, model="", format=""):
+    return llm_provider.chat(phase, messages, model=model, format=format, api_key=_request_api_key)
 
 _MOCK_HEADLINES = {
     "crypto":            "Bitcoin hits new all-time high amid regulatory ETF approvals — institutional demand surges.",
@@ -192,12 +198,14 @@ def _build_graph():
 _content_graph = _build_graph()
 
 
-def run_content_engine(bot_id: str) -> BotPost:
+def run_content_engine(bot_id: str, api_key: str = "") -> BotPost:
     """
     Run the 6-node content engine for a bot. Returns a validated BotPost.
     Graph: check_memory → decide_search → web_search → draft_post → self_critique → publish_or_retry
     With retry loop back to draft_post if score < CRITIQUE_PASS_SCORE and retries < MAX_CRITIQUE_RETRIES.
     """
+    global _request_api_key
+    _request_api_key = api_key
     persona = BOT_PERSONAS[bot_id]
     initial: ContentState = {
         "bot_id": bot_id,
