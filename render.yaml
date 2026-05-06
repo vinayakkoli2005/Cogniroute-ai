@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: cogniroute-ai
+    runtime: docker
+    plan: free
+    envVars:
+      - key: GROQ_API_KEY
+        sync: false
+      - key: GROQ_MODEL
+        value: llama3-70b-8192
+      - key: EMBEDDING_MODEL
+        value: all-MiniLM-L6-v2
+      - key: CHROMA_PATH
+        value: ./chroma_db
+    healthCheckPath: /health
