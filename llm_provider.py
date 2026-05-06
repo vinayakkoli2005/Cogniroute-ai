@@ -16,7 +16,7 @@ load_dotenv()
 GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
 OLLAMA_HOST  = os.getenv("OLLAMA_HOST",  "http://127.0.0.1:11434")
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama3:latest")
-GROQ_MODEL   = os.getenv("GROQ_MODEL",  "llama3-70b-8192")
+GROQ_MODEL   = os.getenv("GROQ_MODEL",  "")
 
 # Determine active provider once at startup
 ACTIVE_PROVIDER = "groq" if GROQ_API_KEY else "ollama"
@@ -52,6 +52,29 @@ def chat(phase: str, messages: list[dict], model: str = "", format: str = "", ap
     return _chat_ollama(phase, messages, model or OLLAMA_MODEL, format)
 
 
+_groq_model_cache: dict[str, str] = {}
+
+# Preferred small-fast models in order — first available wins
+_GROQ_PREFERRED = [
+    "llama-3.1-8b-instant",
+    "llama3-8b-8192",
+    "gemma2-9b-it",
+    "llama-3.3-70b-versatile",
+]
+
+def _resolve_groq_model(client) -> str:
+    """Pick the first preferred model that is currently available on Groq."""
+    try:
+        available = {m.id for m in client.models.list().data}
+        for m in _GROQ_PREFERRED:
+            if m in available:
+                return m
+        # fallback: first model returned by the API
+        return next(iter(available))
+    except Exception:
+        return "llama-3.1-8b-instant"
+
+
 def _chat_groq(phase: str, messages: list[dict], model: str, format: str, api_key: str) -> str:
     """Send request to Groq API using openai-compatible client."""
     from groq import Groq
@@ -59,6 +82,10 @@ def _chat_groq(phase: str, messages: list[dict], model: str, format: str, api_ke
     import time
 
     client = Groq(api_key=api_key)
+    if not model:
+        if api_key not in _groq_model_cache:
+            _groq_model_cache[api_key] = _resolve_groq_model(client)
+        model = _groq_model_cache[api_key]
 
     # If JSON format requested, append explicit instruction to system prompt
     if format == "json":
