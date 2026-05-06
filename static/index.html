@@ -723,7 +723,7 @@ async function doDefend() {
       ? `<div class="injection-badge injection-detected">⚠️ INJECTION DETECTED — Bot held character</div>`
       : `<div class="injection-badge injection-clean">✓ Clean input — No injection detected</div>`;
     document.getElementById('def-injection-badge').innerHTML = badge;
-    document.getElementById('def-content').textContent = d.reply_content;
+    document.getElementById('def-content').textContent = d.reply;
   } catch (e) {
     showError('def-error', `Error: ${e.message}`);
   } finally {
